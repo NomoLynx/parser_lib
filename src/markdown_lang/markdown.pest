@@ -1,0 +1,145 @@
+// character sets
+WHITESPACES    = _{ (!vertical_space ~ " ") | "\t" }
+SPACES         = _{ " "+ }
+EMPTY_LINE     = _{ (" ")* ~ NEWLINE }
+SYMBOLS        = _{ SYMBOL | PUNCTUATION }
+
+//special symbols for inline tags like bold, strike through, italic, etc.
+INLINE_SYMBOLS = _{ "`" | "[" | "*" | "![" | "|" | "~" | "=" | "^" }
+
+SYM_NOT_INLINE = _{ !INLINE_SYMBOLS ~ SYMBOLS }
+URL_CHARS      = _{ ASCII_ALPHANUMERIC | ":" | "/" | "." | "_" | "-" | "%" | "@" | "#" | "(" | (")" ~ &(URL_CHARS* ~ ")")) }
+
+// Common
+char_not_sym_nospace = _{ LETTER | NUMBER | "_" }
+char_not_sym         = _{ char_not_sym_nospace | WHITESPACES }
+anychar              = _{ char_not_sym | SYMBOLS }
+char                 = _{ char_not_sym | SYM_NOT_INLINE }
+text                 =  { char+ }
+slug                 =  { (ASCII_ALPHANUMERIC | "_" | "-" | ".")+ }
+
+// headers
+h1 = { "# " ~ rich_txt }
+h2 = { "## " ~ rich_txt }
+h3 = { "### " ~ rich_txt }
+h4 = { "#### " ~ rich_txt }
+h5 = { "##### " ~ rich_txt }
+h6 = { "###### " ~ rich_txt }
+
+// list
+list_element_under = _{ NEWLINE ~ !("- ") ~ (comment | rich_txt_some) }
+list_element       =  { "- " ~ rich_txt ~ list_element_under* }
+list               =  { list_element ~ (NEWLINE+ ~ list_element)* ~ (NEWLINE | EOI) }
+
+// ordered list
+ordered_list_element_bullet = _{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+ordered_list_element_under = { NEWLINE ~ !(ordered_list_element_bullet ~ ".") ~ (comment | rich_txt_some) }
+ordered_list_element = { ordered_list_element_bullet ~ "." ~ rich_txt ~ ordered_list_element_under* }
+ordered_list = { ordered_list_element ~ (NEWLINE+ ~ ordered_list_element)* ~ (NEWLINE | EOI) }
+
+// quote
+quote_txt  = _{ inline_symbol | text | INLINE_SYMBOLS }
+quote_line =  { quote_txt+ ~ vertical_space? ~ &(NEWLINE | EOI) }
+quote      =  { "> " ~ quote_line* ~ (NEWLINE ~ ("> ")? ~ quote_line)* ~ (NEWLINE | EOI) }
+
+// code
+INLINE_CODE_DELIMITER = _{ "`" ~ !("`") }
+inline_code_code      =  { (char_not_sym | (!INLINE_CODE_DELIMITER ~ SYMBOLS))+ }
+inline_code           =  { (INLINE_CODE_DELIMITER ~ inline_code_code* ~ INLINE_CODE_DELIMITER)+ }
+CODEBLOCK_DELIMITER   = _{ "```" }
+codeblock_code        =  { ((char_not_sym | (!CODEBLOCK_DELIMITER ~ SYMBOLS)))+ }
+codeblock             =  { CODEBLOCK_DELIMITER ~ (WHITESPACES* ~ slug)? ~ NEWLINE ~ (codeblock_code | NEWLINE)* ~ CODEBLOCK_DELIMITER }
+
+// comments
+comment_word = _{ (char_not_sym_nospace | (!("-->") ~ SYMBOLS))+ }
+comment_text =  { (comment_word ~ (NEWLINE | WHITESPACES))* ~ comment_word }
+comment      =  { "<!--" ~ (WHITESPACES | NEWLINE)* ~ comment_text ~ (WHITESPACES | NEWLINE)* ~ "-->" }
+
+// Bold
+BOLD_DELIMITER = _{ "**" }
+bold_text      =  { (char_not_sym | SYM_NOT_INLINE)+ }
+bold_content   = _{ !BOLD_DELIMITER ~ (italic | inline_code | link | reflink | image | strike_through | subscript | superscript | NEWLINE | bold_text) }
+bold           =  { BOLD_DELIMITER ~ bold_content* ~ BOLD_DELIMITER }
+
+// Strikethrough
+STRIKE_THROUGH_DELIMITER = _{ "~~" }
+strike_through_text = { (char_not_sym | SYM_NOT_INLINE)+ }
+strike_through_content = { !STRIKE_THROUGH_DELIMITER ~ ( italic | inline_code | link | reflink | image | bold | highlight | superscript | NEWLINE | strike_through_text ) }
+strike_through = { STRIKE_THROUGH_DELIMITER ~ strike_through_content* ~ STRIKE_THROUGH_DELIMITER }
+
+//high light
+HIGHLIGHT_DELIMITER = _{ "==" }
+highlight_text = { (char_not_sym | SYM_NOT_INLINE)+ }
+highlight_content = _ { !HIGHLIGHT_DELIMITER ~ (italic | inline_code | link | reflink | image | bold | strike_through | superscript | NEWLINE | highlight_text) }
+highlight = { HIGHLIGHT_DELIMITER ~ highlight_content* ~ HIGHLIGHT_DELIMITER }
+
+//subscript
+SUBSCRIPT_DELIMITER = _{ "~" ~ (&STRIKE_THROUGH_DELIMITER | !("~")) }
+subscript_text = { (char_not_sym | SYM_NOT_INLINE)+ }
+subscript_content = _{ !SUBSCRIPT_DELIMITER ~ (italic | inline_code | link | reflink | image | bold | strike_through | highlight | superscript | NEWLINE | subscript_text) }
+subscript = { SUBSCRIPT_DELIMITER ~ subscript_content* ~ SUBSCRIPT_DELIMITER }
+
+//superscript
+SUPERSCRIPT_DELIMITER = _{ "^" }
+superscript_text = { (char_not_sym | SYM_NOT_INLINE)+ }
+superscript_content = _{ !SUPERSCRIPT_DELIMITER ~ (italic | inline_code | link | reflink | image | bold | strike_through | highlight | subscript | NEWLINE | superscript_text) }
+superscript = { SUBSCRIPT_DELIMITER ~ superscript_content* ~ SUPERSCRIPT_DELIMITER }
+
+// Italic
+ITALIC_DELIMITER = _{ "*" ~ (&BOLD_DELIMITER | !("*")) }
+italic_text      =  { (char_not_sym | SYM_NOT_INLINE)+ }
+italic_content   = _{ !ITALIC_DELIMITER ~ (bold | inline_code | link | reflink | image | strike_through | highlight | subscript | NEWLINE | italic_text) }
+italic           =  { ITALIC_DELIMITER ~ italic_content* ~ ITALIC_DELIMITER }
+
+// footnote 
+FOOTNOTE_ARCHER_LEFT_DELIMITER = _{ "[^" }
+FOOTNOTE_ARCHER_RIGHT_DELIMITER = _ { "]" }
+footnote_archer_text = { (char_not_sym_nospace | ".")+ }  // only # or alpha
+footnote_archer = _{ FOOTNOTE_ARCHER_LEFT_DELIMITER ~ footnote_archer_text ~ FOOTNOTE_ARCHER_RIGHT_DELIMITER ~ ":"? }
+footnote_content_text = _{ !footnote_archer ~ (inline_symbol | text | INLINE_SYMBOLS)* }   //can be inline symbol like "bold", single line symbol, or regular chars
+footnote_content = { footnote_archer ~ SPACES* ~ footnote_content_text } 
+
+// Direct Links
+url       = { URL_CHARS* }
+link_text = { (char_not_sym | (!(INLINE_SYMBOLS | "]") ~ SYMBOLS))+ | NEWLINE }
+link      = { "[" ~ (inline_symbol | link_text)* ~ "](" ~ url ~ ")" }
+
+// Links using references & labels
+reflink    = { "[" ~ (inline_symbol | link_text)* ~ "][" ~ slug ~ "]" }
+refurl_url = { (URL_CHARS | ")")* }
+refurl     = { "[" ~ slug ~ "]:" ~ WHITESPACES* ~ refurl_url }
+
+// Images
+img_tag_key = { slug }
+img_tag_val = { char_not_sym_nospace+ | ("\"" ~ (!("]" | "\"") ~ anychar)* ~ "\"") }
+img_tag     = { img_tag_key ~ WHITESPACES* ~ ":" ~ WHITESPACES* ~ img_tag_val }
+image_tags  = { "[" ~ (img_tag ~ "," ~ WHITESPACES*)* ~ img_tag ~ "]" }
+image       = { "![" ~ link_text* ~ "](" ~ url ~ ")" ~ image_tags? }
+
+// Paragraph
+paragraph_newline =  { NEWLINE }
+paragraph_line    = _{ SPACES? ~ (!block_type ~ rich_txt_some ~ vertical_space?)+ }
+paragraph         =  {
+    paragraph_line ~ (paragraph_newline ~ paragraph_line)* ~ &(NEWLINE | EOI)
+}
+
+// Separator
+horiz_sep      = { ("-"){3, } }
+vertical_space = { "  " ~ &(NEWLINE | EOI) }
+
+// Meta
+rich_txt       =  { rich_txt_maybe }
+rich_txt_maybe = _{ (inline_symbol | text)* }
+rich_txt_some  = _{ (inline_symbol | text)+ }
+
+//table 
+table_row = { "|" ~ (WHITESPACES* ~ rich_txt ~ WHITESPACES* ~ "|")+ ~ SPACES? ~ EMPTY_LINE}
+table = { (table_row)+ }
+
+inline_symbol = _{ bold | italic | inline_code | link | reflink | refurl | image | strike_through | highlight | subscript | superscript | footnote_archer } 
+block_type    = _{ h1 | h2 | h3 | h4 | h5 | h6 | quote | codeblock | comment | list | ordered_list | footnote_content }
+
+text_line = _{ block_type | horiz_sep | &NEWLINE | table | paragraph }
+file      =  {
+    SOI ~ (text_line ~ NEWLINE ~ EMPTY_LINE*)* ~ text_line? ~ SPACES? ~ EOI
+}

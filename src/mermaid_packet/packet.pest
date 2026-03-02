@@ -1,0 +1,40 @@
+// Mermaid.js Packet Diagram Grammar Rules
+
+packet_diagram = {
+    SOI ~
+    NEWLINE* ~
+    formatter? ~
+    title? ~
+    formatter? ~
+    packet_start ~
+    title? ~
+    (field ~ NEWLINE*)* ~
+    EOI
+}
+
+WHITESPACE = _{ " " | "\t" }
+NEWLINE = _{ "\n" | "\r\n" }
+COMMENT = _{ "%%" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
+QUOTES = _{ "\"" }
+
+formatter = _{ "---" ~ NEWLINE}
+
+packet_start = _{ "packet" ~ NEWLINE+ }
+title_start = _{ "title" }
+
+
+title = { title_start ~ ":"? ~ QUOTES? ~ title_name ~ QUOTES? ~ NEWLINE+ }
+title_name = @{ (!(NEWLINE | QUOTES) ~ ANY)+ }
+
+field = { bit_specification ~ ":" ~ field_name ~ COMMENT? }
+bit_specification = {
+    relative_bits |
+    bit_range |
+    single_bit
+}
+relative_bits = @{ "+" ~ number }
+bit_range = @{ number ~ "-" ~ number }
+number = @{ ASCII_DIGIT+ }
+single_bit = @{ ASCII_DIGIT+ }
+field_name = { QUOTES ~ name ~ QUOTES }
+name = @{ (!"\"" ~ ANY)* }

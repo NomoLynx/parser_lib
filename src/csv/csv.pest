@@ -1,0 +1,13 @@
+csv = { SOI ~ record ~ (newline ~ record)* ~ EOI }
+record = { field ~ (comma ~ field)* }
+field = _{ quoted_field | unquoted_field }
+quoted_field = @{ quote ~ quoted_content* ~ quote }
+
+quoted_content = { escaped_quote | quote_char }
+quote_char = { (!quote ~ ANY) }
+
+unquoted_field = { (!comma ~ !newline ~ ANY)* }
+escaped_quote = { quote ~ quote }
+comma = _{ "," }
+newline = _{ "\n" | "\r\n" }
+quote = _{ "\"" }

@@ -1,0 +1,74 @@
+program = { SOI ~ title? ~ "stateDiagram" ~ ("-v" ~ number)? ~ stmt_list ~ EOI }
+
+stmt_list = { stmt+ }
+
+stmt = {
+  
+  | direction
+  | state_aliases_type
+  | state_description_type
+  | state_start_to_end
+  | state_composite
+  | note_state_statement
+  | forks_statement
+  | choice_statement
+  | concurrency_statement
+}
+
+title         = _{ PUSH("---") ~ "title" ~ title_content ~ POP }
+title_content = @{ (!NEWLINE ~ ANY)* }
+
+/// direction
+direction             = { "direction" ~ direction_orientation }
+direction_orientation = { "LR" | "TB" | "BT" }
+
+/// Aliases
+state_aliases_type = { "state" ~ term ~ "as" ~ term }
+
+/// state with desc
+state_description_type = { term ~ ":" ~ state_description_type_desc }
+
+state_description_type_desc = @{ (!NEWLINE ~ ANY)* }
+
+/// state_start_to_end
+state_start_to_end      =  { state_start_to_end_id ~ "-->" ~ state_start_to_end_id ~ (":" ~ state_start_to_end_desc)? }
+state_start_to_end_id   = @{ term | "[*]" }
+state_start_to_end_desc = @{ (!NEWLINE ~ ANY)* }
+
+/// state_composite
+state_composite = { "state" ~ term ~ "{" ~ stmt_list ~ "}" }
+
+/// note state
+note_state_statement          =  { note_state_singline_statement | note_state_block_statement }
+note_state_block_statement    =  { "note" ~ note_state_orientation ~ note_state_block_id ~ note_state_block_desc ~ "end note" }
+note_state_block_id           = @{ (!NEWLINE ~ ANY)* }
+note_state_block_desc         =  { (!"end note" ~ ANY)* }
+note_state_singline_statement =  { "note" ~ note_state_orientation ~ term ~ ":" ~ note_state_singline_desc }
+note_state_singline_desc      = @{ (!NEWLINE ~ ANY)* }
+note_state_orientation        =  { "right of" | "left of" }
+
+/// forks statment
+forks_statement = { "state" ~ term ~ "<<fork>>" }
+
+/// choice statment
+choice_statement = { "state" ~ term ~ ("<<choice>>" | "<<join>>") }
+
+/// concurrency statement
+concurrency_statement = { "--" }
+
+/// A rule term.
+term = { terminal | literal }
+
+/// A terminal expression.
+terminal = _{ "&"? ~ identifier ~ "<" ~ "&"? ~ identifier ~ ">" | "&" ~ identifier | identifier }
+
+/// An literal.
+literal = { string | number | bool_value }
+
+/// A grammar comment.
+COMMENT = _{ ("%%" ~ (!NEWLINE ~ ANY)*) }
+
+/// A whitespace character.
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+SPACE = _{ " " }

@@ -1,0 +1,178 @@
+program = { SOI ~ title? ~ ("flowchart" | "graph") ~ (orientation ~ ":"?)? ~ stmt_list ~ EOI }
+
+stmt_list = { stmt+ }
+
+/// A rule stmt
+stmt = {
+    flowchart_subgraphs
+  | flowchart_multiple_nodes_links
+  | flowchart_multiple_links
+}
+
+/// title
+title         = _{ PUSH("---") ~ "title" ~ ":" ~ title_content ~ POP }
+title_content = @{ (!NEWLINE ~ ANY)* }
+
+/// orientation
+orientation = { "LR" | "TB" | "BT" | "TD" | "RL" }
+
+/// flowchart_multiple_links
+flowchart_multiple_links = { flowchart_node_pair }
+
+/// multiple nodes syntax is that the operator "&" should occur at least one time
+flowchart_multiple_nodes_links = { flowchart_node_pair ~ (flowchart_multiple_node_link_type ~ flowchart_node_pair)+ }
+
+/// pair of flowchart_node
+flowchart_node_pair = { flowchart_node ~ (flowchart_link_type ~ flowchart_node)* }
+
+/// flowchart_node
+flowchart_node = {
+    flowchart_stadium_shaped_node
+  | flowchart_double_cycle_node
+  | flowchart_form_cycle_node
+  | flowchart_cylindrical_node
+  | flowchart_subroutine_node
+  | flowchart_parallelogram_alt_node
+  | flowchart_hexagon_node
+  | flowchart_trapezoid_node
+  | flowchart_trapezoid_alt_node
+  | flowchart_parallelogram_node
+  | flowchart_round_edge_node
+  | flowchart_asymmetric_node
+  | flowchart_rhombus_node
+  | flowchart_plain_node
+}
+
+/// flowchart_plain_node
+flowchart_plain_node = { !"end" ~ term ~ ("[" ~ flowchart_plain_node_text ~ "]")? }
+// rule:!"end" is to avoid the confliction with subgraph
+flowchart_plain_node_text = { (!"]" ~ ANY)* }
+
+/// flowchart_stadium_shaped_node
+flowchart_stadium_shaped_node      = { term ~ "([" ~ flowchart_stadium_shaped_node_text ~ "])" }
+flowchart_stadium_shaped_node_text = { (!"])" ~ ANY)* }
+
+/// flowchart_round_edge_node
+flowchart_round_edge_node      = { term ~ "(" ~ flowchart_round_edge_node_text ~ ")" }
+flowchart_round_edge_node_text = { (!")" ~ ANY)* }
+
+/// flowchart_subroutine_node
+flowchart_subroutine_node      = { term ~ "[[" ~ flowchart_subroutine_node_text ~ "]]" }
+flowchart_subroutine_node_text = { (!"]]" ~ ANY)* }
+
+/// flowchart_cylindrical_node
+flowchart_cylindrical_node      = { term ~ "[(" ~ flowchart_cylindrical_node_text ~ ")]" }
+flowchart_cylindrical_node_text = { (!")]" ~ ANY)* }
+
+/// flowchart_form_cycle_node
+flowchart_form_cycle_node      = { term ~ "((" ~ flowchart_form_cycle_node_text ~ "))" }
+flowchart_form_cycle_node_text = { (!"))" ~ ANY)* }
+
+/// flowchart_asymmetric_node
+flowchart_asymmetric_node      = { term ~ ">" ~ flowchart_asymmetric_node_text ~ "]" }
+flowchart_asymmetric_node_text = { (!"]" ~ ANY)* }
+
+/// flowchart_rhombus_node
+flowchart_rhombus_node      = { term ~ "{" ~ flowchart_rhombus_node_text ~ "}" }
+flowchart_rhombus_node_text = { (!"}" ~ ANY)* }
+
+/// flowchart_hexagon_node
+flowchart_hexagon_node      = { term ~ "{{" ~ flowchart_hexagon_node_text ~ "}}" }
+flowchart_hexagon_node_text = { (!"}}" ~ ANY)* }
+
+/// flowchart_parallelogram_node
+flowchart_parallelogram_node      = { term ~ "[/" ~ flowchart_parallelogram_node_text ~ "/]" }
+flowchart_parallelogram_node_text = { (!"/]" ~ ANY)* }
+
+/// flowchart_parallelogram_alt_node
+flowchart_parallelogram_alt_node      =  { term ~ "[\\" ~ flowchart_parallelogram_alt_node_text ~ "\\]" }
+flowchart_parallelogram_alt_node_text = @{ (!("\\]" | NEWLINE) ~ ANY)* }
+
+/// flowchart_trapezoid_node
+flowchart_trapezoid_node      = { term ~ "[/" ~ flowchart_trapezoid_node_text ~ "\\]" }
+flowchart_trapezoid_node_text = { (!"\\]" ~ ANY)* }
+
+/// flowchart_trapezoid_alt_node
+flowchart_trapezoid_alt_node      = { term ~ "[\\" ~ flowchart_trapezoid_alt_node_text ~ "/]" }
+flowchart_trapezoid_alt_node_text = { (!"/]" ~ ANY)* }
+
+/// flowchart_double_cycle_node
+flowchart_double_cycle_node      = { term ~ "(((" ~ flowchart_double_cycle_node_text ~ ")))" }
+flowchart_double_cycle_node_text = { (!")))" ~ ANY)* }
+
+/// flowchart_subgraphs
+flowchart_subgraphs       =  { "subgraph" ~ flowchart_subgraphs_title ~ stmt_list ~ "end" }
+flowchart_subgraphs_title = @{ (!NEWLINE ~ ANY)* }
+
+/// flowchart_link_type
+flowchart_link_type = {
+    flowchart_open_link
+  | flowchart_dotted_link
+  | flowchart_thick_link
+  | flowchart_invisible_link
+  | flowchart_cycle_edge
+  | flowchart_cross_edge
+  | flowchart_arrow_edge
+  | flowchart_row_head_link
+}
+
+/// flowchart_row_head_link
+flowchart_row_head_link = { flowchart_row_head_verical_link | flowchart_row_head_horizontal_link }
+
+/// if rule:flowchart_row_head_Verical_link_text does not exist, then rule:flowchart_row_head_Verical_link will produce "-->"
+flowchart_row_head_verical_link      = _{ "-->" ~ ("|" ~ flowchart_row_head_verical_link_text ~ "|")? }
+flowchart_row_head_verical_link_text =  { (!"|" ~ ANY)* }
+
+flowchart_row_head_horizontal_link      = _{ ("--" ~ flowchart_row_head_horizontal_link_text)? ~ "-->" }
+flowchart_row_head_horizontal_link_text =  { (!"-->" ~ ANY)* }
+
+/// flowchart_open_link
+flowchart_open_link = { flowchart_open_Verical_link | flowchart_open_horizontal_link }
+
+flowchart_open_Verical_link      = _{ "---" ~ ("|" ~ flowchart_open_Verical_link_text ~ "|")? }
+flowchart_open_Verical_link_text =  { (!"|" ~ ANY)* }
+
+flowchart_open_horizontal_link      = _{ ("--" ~ flowchart_open_horizontal_link_text)? ~ "---" }
+flowchart_open_horizontal_link_text =  { (!("---" | ">") ~ ANY)* }
+// ">" to avoid conflicting with rule:flowchart_row_head_Verical_link
+
+/// flowchart_dotted_link
+flowchart_dotted_link      = { "-." ~ (flowchart_dotted_link_text ~ ".")? ~ "->" }
+flowchart_dotted_link_text = { (!".->" ~ ANY)* }
+
+/// flowchart_thick_link
+///!">" is to avoid consuming the character "==" so as to failure of the end flag "==>" when no text is present
+flowchart_thick_link      = { ("==" ~ !">" ~ flowchart_thick_link_text)? ~ "==>" }
+flowchart_thick_link_text = { (!"==>" ~ ANY)* }
+
+/// flowchart_invisible_link
+flowchart_invisible_link = { "~~~" }
+
+/// flowchart_multiple_node_link
+flowchart_multiple_node_link_type = { "&" }
+
+/// flowchart_cycle_edge
+flowchart_cycle_edge = { "o--o" | "--o" }
+
+/// flowchart_cross_edge
+flowchart_cross_edge = { "x--x" | "--x" }
+
+/// flowchart_arrow_edge
+flowchart_arrow_edge = { "<-->" }
+
+/// A rule term.
+term = { literal | terminal }
+
+/// A terminal expression.
+terminal = _{ identifier }
+
+/// An literal.
+literal = { string | number | bool_value }
+
+/// A grammar comment.
+COMMENT = _{ ("%%" ~ (!NEWLINE ~ ANY)*) }
+
+/// A whitespace character.
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+SPACE = _{ " " }

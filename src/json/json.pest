@@ -1,0 +1,15 @@
+json = _{ SOI ~ object* ~ EOI }
+object     = { "{" ~ "}" | "{" ~ pair ~ ("," ~ pair)* ~ "}" }
+pair       = { string ~ ":" ~ value }
+
+array      = { "[" ~ "]" | "[" ~ value ~ ("," ~ value)* ~ "]" }
+
+value      = _{ object | array | string | number | boolean | null }
+
+boolean    = { "true" | "false" }
+
+null       = { "null" }
+
+string     = { "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+number     = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)? }
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }

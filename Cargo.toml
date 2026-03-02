@@ -1,0 +1,25 @@
+[package]
+name = "parser_lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# pest parsers
+pest = "*"
+pest_derive = { version = "*", features = ["grammar-extras"] }
+pest_generator = "*"
+
+# color output
+ansi_term = "*"
+
+# xml read for string and localization
+xml-rs = "*"
+
+# date/time
+chrono = "*"
+
+# shared utilities
+core_utils = { path = "../core_utils" }
+
+# public macro libraries
+rust_macro = { path = "../rust_macro" }

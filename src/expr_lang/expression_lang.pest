@@ -1,0 +1,9 @@
+expr = { SOI ~ expression ~ EOI }
+
+expr2 = { SOI ~ tenary_expression ~ EOI }
+
+// ⁂ white space rule, which will be applied implicitly
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+// ⁂ comments, which will be applied implicitly
+COMMENT = _{ "#" ~ (!(NEWLINE | EOI) ~ ANY)* ~ (NEWLINE | EOI) }

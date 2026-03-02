@@ -1,0 +1,142 @@
+// ⁂ Basic Type Grammar
+
+// ⁂ string
+string_no_escape = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+string_escape = @{ "\"" ~ ("\"\"" | "\\\\" | "\\\"" | "\\/" | "\\b" | "\\f" | "\\n" | "\\r" | "\\t" | !"\"" ~ ANY )* ~ "\"" }
+string = @{ string_escape | string_no_escape }
+
+// ⁂ single quote string
+sq_string_no_escape = @{ "'" ~ (!"'" ~ ANY)* ~ "'" }
+sq_string_escape = @{ "'" ~ (!"'" ~ ANY | "''" | "\\\\" | "\\'" | "\\/" | "\\b" | "\\f" | "\\n" | "\\r" | "\\t")* ~ "'" }
+sq_string = @{ sq_string_no_escape | sq_string_escape }
+
+// ⁂ integer
+integer = { hex_number | oct_number | bin_number | signed_integer }
+
+// signed integer
+sign = { ("+" | "-")? }
+signed_integer = @{ sign? ~ ASCII_DIGIT+ ~ !(^"e" | "." ~ ASCII_DIGIT | ".e") }  // this !(^"e" | ".") is necessary to avoid int prematurally matched, while the value is actaully a float
+
+// hex integer
+hex_number = @{ "0x" ~ ASCII_HEX_DIGIT ~ ("_"? ~ ASCII_HEX_DIGIT)* }
+
+// oct number 
+oct_number = @{ "0o" ~ ('0'..'7') ~ ( "_"? ~ ('0'..'7') )* }
+
+// bin integer
+bin_number = @{ "0b" ~ ("0" | "1") ~ ( "_"? ~ ("0" | "1") )* }
+
+// ⁂ float
+float = @{ 
+    sign? ~ "Inf"
+    | "NaN"
+    | decimal ~ (exponent)? ~ !"x"    //this !"x" is necessary to avoid pre-mature match 0x. with this !"x", float rule will fail and turn to match the hex number
+}
+decimal = @{ sign? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? 
+          | sign? ~ "." ~ ASCII_DIGIT* }
+exponent = @{ ("e" | "E") ~ signed_integer }
+
+number = { integer | float }
+
+// ⁂ charcter
+single_character = ${ "'" ~ ("\\U" ~ unicode_code_8 | "\\u" ~ unicode_code_4 | "\\x" ~ hex_code | "\\" ~ escape_char | ANY) ~ "'" }
+escape_char = { "n" | "r" | "t" | "a" | "b" | "f" | "v" }
+unicode_code_8 = { ASCII_HEX_DIGIT{8} }
+unicode_code_4 = { ASCII_HEX_DIGIT{4} }
+hex_code = { ASCII_HEX_DIGIT+ }
+
+// ⁂ An identifier must start with an ascii_alpha character or an underscore
+id = { identifier | sq_string }
+identifier = @{ space_identifier | ascii_alpha ~ ("_" | "`" | ASCII_ALPHANUMERIC )* }
+ascii_alpha = { ASCII_ALPHA | "_" | "`" }
+space_identifier = ${ "`" ~ space_identifier_content ~  "`" }
+space_identifier_content = { (!"`" ~ ANY)+ }
+
+// ⁂ operators & separators
+addition = { "+" }
+subtraction = { "-" }
+multiplication = { "*"  }
+division = { "/" }
+rem = { "%" }
+
+pow = { "**" }
+logic_and = { "&&" }
+logic_or  = { "||" }
+logic_equal = { "==" }
+logic_not_equal = { "!=" }
+logic_not = { "!" }
+
+operator_greater = { ">" }
+operator_equal_or_greater = { ">=" }
+operator_less = { "<" }
+operator_equal_or_less = { "<=" }
+
+bit_left_move = { "<<" }
+bit_right_move = { ">>" }
+bit_and = { "&" }
+bit_or = { "|" }
+bit_not = { "~" }
+bit_exclusive_or = { "^" }
+
+left_bracket = { "(" }
+right_bracket = { ")" }
+left_square_bracket = { "[" }
+right_square_bracket = { "]" }
+
+comma = { "," }
+scope_open = { "{" }
+scope_close = { "}" }
+
+plusplus = { "++" }
+minusminus = { "--" }
+
+// ⁂ Define the rule for the expression
+expression = { atom ~ (binary_op ~ atom)* }
+binary_op = _{
+    pow | 
+    addition | subtraction | multiplication | division | rem |
+    bool_op |
+    bit_left_move | bit_right_move | bit_and | bit_or | bit_exclusive_or |
+    compare_operators
+}
+unary_op = { plusplus | minusminus | subtraction | logic_not | bit_not | bit_and | multiplication }
+post_op = { plusplus | minusminus } 
+atom = _{
+    unary_op? ~ (bool_value | integer | float | identifier | single_character |
+    "(" ~ tenary_expression ~ ")" |
+    "(" ~ expression ~ ")") ~ post_op?
+}
+
+// ⁂ define the Boolean expression
+bool_value = { ^"true" | ^"false" }
+bool_op = _{ logic_and | logic_or }
+compare_operators = _{ operator_equal_or_greater | operator_greater | operator_equal_or_less | operator_less | logic_equal | logic_not_equal }
+
+tenary_expression = { expression ~ ("?" ~ expression ~ ":" ~ expression)? }
+
+// ⁂ dotted name, e.g. ObjectA.PropertyB.PropertyC
+dotted_name = @{ id ~ ("." ~ (id | decimal) )* }
+
+// ⁂ separated name, e.g. ABC::DEF::abc
+rust_name   = ${ id ~ ("::" ~ (id | decimal) )* }
+
+// ⁂ hex byte
+HEXBYTE = @{ ASCII_HEX_DIGIT{2} }
+hexbytes = { HEXBYTE+ }
+
+// ⁂ item count
+item_count = { "[" ~ integer ~ "]" }
+
+// ⁂ file and dir name
+file_dir_name_char               =  _{ ASCII_ALPHANUMERIC | "_" }
+file_or_directory_name_component =  { file_dir_name_char+ }
+file_name                        = @{ file_or_directory_name_component ~ ("." ~ file_or_directory_name_component)* }
+current_dir                      = _{ "." }
+upper_dir                        = _{ ".." }
+directory_name                   = @{ upper_dir | current_dir | file_or_directory_name_component ~ ("." ~ file_or_directory_name_component)* }
+win_dir_splitter                 =  _{ "\\" }
+unix_dir_splitter                =  _{ "/" }
+win_directory                    =  ${ directory_name ~ (win_dir_splitter ~ directory_name)* ~ win_dir_splitter }
+unix_directory                   =  ${ directory_name ~ (unix_dir_splitter ~ directory_name)* ~ unix_dir_splitter }
+directory = { unix_directory | win_directory } 
+path = ${ directory? ~ file_name }

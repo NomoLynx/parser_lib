@@ -1,0 +1,45 @@
+formatted_string = { SOI ~ 
+    (raw_string | 
+     verbatim_string |
+     path_string ) 
+    ~ EOI }
+
+// raw string
+raw_string = ${ double_quote ~ raw_string_content+ ~ double_quote }
+raw_string_content = { (unicode_format | escaped_item | item | plain_char_except_double_quote ) }
+plain_char_except_double_quote = { !double_quote ~ ANY }
+double_quote = _ { "\"" }
+escaped_item = { "\\" ~ ("\\" | "{" | "\"" | "}" | "n" | "r" | "t" | "0") }
+
+item = { "{" ~ item_content ~ "}" }
+item_content = _ { index ~ ("," ~ signed_integer)? ~ (":" ~ formatter ~ precision)? }
+index = { signed_integer }
+formatter = { ASCII } 
+precision = { signed_integer }
+
+unicode_format = _ { utf16 | utf32 }
+utf16 = { "\\u" ~ ASCII_HEX_DIGIT{4} }
+utf32 = { "\\U00" ~ ASCII_HEX_DIGIT{6} }
+
+//verbatim string
+verbatim_string = ${ "@" ~ double_quote ~ verbatim_string_content+ ~ double_quote }
+verbatim_string_content = { (unicode_format | verbatim_escape_item | item | plain_char_except_double_quote ) }
+verbatim_escape_item = { "\"\"" }
+
+//path string
+path_string = ${ "#" ~ separator? ~ double_quote ~ path_string_content+ ~ double_quote }
+separator = { "/" | "\\" }
+path_string_content = { unicode_format | item | plain_char_except_double_quote }
+
+// date time format string
+datetime_format_string = ${ (millisecond_format | year_format | month_format | day_format | hour_format | minute_format | second_format | ampm_format | splitter){,16} }
+year_format = { ^"yyyy" | ^"yy" }
+month_format = { "MM" | "M" }
+day_format = { ^"dd" | ^"d" }
+hour_format = { ^"hh" | ^"h" }
+minute_format = { "mm" | "m" }
+second_format = { ^"ss" | ^"s" }
+millisecond_format = { ^"ms" ~  millisecond_precision }
+millisecond_precision = { ASCII_DIGIT }
+ampm_format = { ^"am" | ^"pm" }
+splitter = { ANY }

@@ -1,0 +1,112 @@
+program = { SOI ~ "sequenceDiagram" ~ stmt_list ~ EOI }
+
+stmt_list = { stmt+ }
+
+stmt = {
+    actor_statement
+  | participant_statement
+  | actor_destroy_statement
+  | loops_statement
+  | alt_statement
+  | parallel_statement
+  | critical_statement
+  | opt_statement
+  | break_statement
+  | background_highlight_statement
+  | message_statement
+  | activation_statement
+  | notes_statement
+  | box_statement
+  | actor_creation_statement
+}
+
+/// Participants statement
+participant_statement =  { "participant" ~ participant_role ~ ("as" ~ participant_role)? }
+participant_role      = @{ term ~ (SPACE ~ !"as" ~ term)* }
+
+/// actor creation statement
+actor_creation_statement = { "create" ~ (participant_statement | actor_statement) }
+
+/// actor destroy
+actor_destroy_statement =  { "destroy" ~ actor_destroy_role }
+actor_destroy_role      = @{ term ~ (SPACE ~ term)* }
+
+/// actor statement
+actor_statement =  { "actor" ~ actor_role ~ ("as" ~ actor_role)? }
+actor_role      = @{ term ~ (SPACE ~ !"as" ~ term)* }
+
+/// box statement
+box_statement      =  { "box" ~ box_statement_text ~ stmt_list ~ "end" }
+box_statement_text = @{ (!NEWLINE ~ ANY)* }
+
+/// Notes statement
+notes_statement           =  { ^"N" ~ "ote" ~ notes_statement_direction ~ notes_actor ~ ":" ~ notes_statement_message }
+notes_statement_direction =  { "right of" | "left of" | "over" }
+notes_statement_message   = @{ (!NEWLINE ~ ANY)* }
+notes_actor               = @{ term ~ (SPACE ~ term)* }
+
+/// Activations statment
+activation_role      = @{ term ~ (SPACE ~ term)* }
+activation_action    =  { "activate" | "deactivate" }
+activation_statement =  { activation_action ~ activation_role }
+
+/// message statement
+message_actor     = @{ term ~ (SPACE ~ term)* }
+message_arrow     = _{ "->>+" | "-->>-" | "-->>" | "->>" | "->" | "-->" | "--x" | "-x" | "--)" | "-)" }
+message_text      = @{ (!NEWLINE ~ ANY)* }
+message_statement =  { message_actor ~ message_arrow ~ message_actor ~ ":" ~ message_text }
+
+/// loops statement
+loops_statement      =  { "loop" ~ loops_statement_text ~ stmt_list ~ "end" }
+loops_statement_text = @{ (!NEWLINE ~ ANY)* }
+
+/// alt statement
+alt_statement      =  { "alt" ~ alt_statement_text ~ stmt_list ~ "else" ~ alt_statement_text ~ stmt_list ~ "end" }
+alt_statement_text = @{ (!NEWLINE ~ ANY)* }
+
+/// opt statement, it needs to resolve the conflicion with "option" statement in rule:critical_statement
+opt_statement      =  { !"option" ~ "opt" ~ opt_statement_text ~ stmt_list ~ "end" }
+opt_statement_text = @{ (!NEWLINE ~ ANY)* }
+
+/// parallel statement
+parallel_statement         =  {
+    "par" ~ parallel_statement_action ~ stmt_list ~ parallel_action_statements ~ "end"
+}
+parallel_action_statements =  { parallel_action_statement+ }
+parallel_action_statement  = _{ "and" ~ parallel_statement_action ~ stmt_list }
+parallel_statement_action  = @{ (!NEWLINE ~ ANY)* }
+
+/// critical  statement
+critical_statement         =  {
+    "critical" ~ critical_statement_action ~ critical_action_statements ~ "end"
+}
+critical_action_statements =  { critical_action_statement+ }
+critical_action_statement  = _{ "option" ~ critical_statement_action ~ stmt_list }
+critical_statement_action  = @{ (!NEWLINE ~ ANY)* }
+
+/// break  statement
+break_statement        =  {
+    "break" ~ break_statement_action ~ stmt_list ~ "end"
+}
+break_statement_action = @{ (!NEWLINE ~ ANY)* }
+
+/// background hilighting statement
+background_highlight_statement = { term ~ ("rgb" | "rgba") ~ "(" ~ background_highlight_colors ~ ")" ~ stmt_list ~ "end" }
+background_highlight_colors    = { (number ~ ","?)+ }
+
+/// A rule term.
+term = { terminal | literal }
+
+/// A terminal expression.
+terminal = _{ identifier }
+
+/// An literal.
+literal = { string | number | bool_value }
+
+/// A grammar comment.
+COMMENT = _{ ("%%" ~ (!NEWLINE ~ ANY)*) }
+
+/// A whitespace character.
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+SPACE = _{ " " }
