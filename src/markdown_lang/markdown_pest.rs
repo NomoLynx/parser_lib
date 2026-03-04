@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use core_utils::number::u32_to_base26;
 use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
 
@@ -209,6 +210,7 @@ impl File {
         r
     }
 
+    /// get all text lines after header until the next header with the same level, including the header line
     pub fn get_all_text_lines_after_header(&self, header_text:&str, level:u8) -> Vec<&TextLine> {
         let r = self.text_line.iter()
                         .skip_while(|x| !x.is_header_with_text_and_level(header_text, level))
@@ -224,7 +226,7 @@ impl File {
         r
     }
 
-    /// get all code blocks after header
+    /// get all code blocks after header at level 2
     pub fn get_codes_after_header(&self, header_text:&str) -> Vec<&CodeBlock> {
         let r = self.get_items_in_header(header_text, 2, |x| {
             if let Some(_c) = x.get_code() {
@@ -419,7 +421,27 @@ impl Table {
                 r.push(name.trim().to_string());
             }
             else {
-                r.push(super::u32_to_base26(i as u32));
+                r.push(u32_to_base26(i as u32));
+            }
+        }
+
+        Ok(r)
+    }
+
+    /// get column data, give column index and return column data
+    pub fn get_col_data(&self, i:usize) -> Result<Vec<String>, ParsingError> {
+        let (x, _y) = self.get_demision()?;
+        if i>=x {
+            return Err(ParsingError::MarkdownPestError(MarkdownPestError::InvalidLocation))
+        }
+
+        let mut r = Vec::default();
+        for row in self.data_rows() {
+            if let Some(cell) = row.iter().nth(i) {
+                r.push(cell.get_display_text());
+            }
+            else {
+                r.push(String::new());
             }
         }
 
@@ -738,6 +760,20 @@ impl RichText {
                 .collect::<Vec<_>>();
         r
     }
+
+    pub fn get_display_text(&self) -> String {
+        let mut str = String::new();
+        for n in self.get_content() {
+            match n {
+                RichTextItem::FootNoteArcher(_) => { }
+                RichTextItem::Text(n) => str.push_str(n),
+                RichTextItem::InlineSymbol(n) => {
+                    str.push_str(&n.get_display_text());
+                }
+            }
+        }
+        str
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -819,6 +855,25 @@ impl Inline {
         match self {
             Self::Link(n) => Some(n),
             _ => None,
+        }
+    }
+
+    pub fn get_display_text(&self) -> String {
+        match self {
+            Self::Bold(n) => {
+                let mut str = String::new();
+                for content in &n.value {
+                    str.push_str(&content.get_display_text());
+                }
+
+                str
+            }
+            Self::Image(_) => String::new(),
+            Self::Italic(n) => n.get_display_text(),
+            Self::RefUrl(_n) => String::new(),
+            Self::Link(n) => n.get_display_text(),
+            Self::RefLink(_n) => String::new(),
+            Self::InlineCode(n) => n.to_string(),
         }
     }
 }
@@ -972,8 +1027,10 @@ impl Link {
                     match n.as_rule() {
                         Rule::inline_symbol => texts.push(LinkText::InlineSymbol(Inline::from_pair(&n)?)),
                         Rule::link_text => texts.push(LinkText::LinkText(n.as_str().to_string())),
+                        Rule::inline_code => texts.push(LinkText::LinkText(n.as_str().to_string())),
                         _ => {
-                            error_string(format!("need to implement {pair:?} in Link's link match case"));
+                            error_string(format!("need to implement {n:?} in Link's link match case"));
+                            error_string(format!("pair = {pair:?}"));
                             return Err(ParsingError::ParsingConversionError)
                         }
                     }
@@ -999,6 +1056,15 @@ impl Link {
             .filter_map(|x| x.get_text())
             .fold(String::new(), |acc, val| { format!("{acc}{val}") })
     }
+
+    pub fn get_display_text(&self) -> String {
+        let mut str = String::new();
+        for n in &self.link_text {
+            str.push_str(& n.get_display_text());
+        }
+
+        str
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1012,6 +1078,13 @@ impl LinkText {
         match self {
             Self::LinkText(n) => Some(n),
             _ => None,
+        }
+    }
+
+    pub fn get_display_text(&self) -> String {
+        match self {
+            Self::InlineSymbol(n) => n.get_display_text(),
+            Self::LinkText(n) => n.to_string(),
         }
     }
 }
@@ -1043,6 +1116,15 @@ impl Italic {
 
         Ok(Self { value: v })
     }
+
+    pub fn get_display_text(&self) -> String {
+        let mut str = String::new();
+        for n in &self.value {
+            str.push_str(&n.get_display_text());
+        }
+
+        str 
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1070,6 +1152,17 @@ impl ItatlicContent {
             }
         }
     }
+
+    pub fn get_display_text(&self) -> String {
+        match self {
+            Self::Bold(n) => n.get_display_text(),
+            Self::Image(_) => String::new(),
+            Self::InlineCode(n) => n.to_string(),
+            Self::Link(n) => n.get_display_text(),
+            Self::RefLink(_) => String::new(),
+            Self::Text(n) => n.to_string(),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1092,6 +1185,15 @@ impl Bold {
                 Err(ParsingError::ParsingConversionError)
             }
         }
+    }
+
+    pub fn get_display_text(&self) -> String {
+        let mut str = String::new();
+        for n in & self.value {
+            str.push_str(&n.get_display_text())
+        }
+
+        str
     }
 }
 
@@ -1121,6 +1223,17 @@ impl BoldContent {
                 error_string(format!("need to implement {pair:?} in BoldContent"));
                 Err(ParsingError::ParsingConversionError)
             }
+        }
+    }
+
+    pub fn get_display_text(&self) -> String {
+        match self {
+            Self::Image(_) => String::new(),
+            Self::InlineCode(n) => n.to_string(),
+            Self::Italic(n) => n.get_display_text(),
+            Self::Link(_) |
+            Self::RefLink(_) => String::new(),
+            Self::Text(n) => n.to_string(),
         }
     }
 }
