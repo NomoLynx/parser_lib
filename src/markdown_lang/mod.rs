@@ -12,3 +12,8 @@ pub fn load_md_file(path_str: &str) -> Result<File, crate::common::ParsingError>
     let md_file = markdown_pest::File::from_file(path_str)?;
     Ok(md_file)
 }
+
+pub fn load_md_file_from_str(md_str: &str) -> Result<File, crate::common::ParsingError> {
+    let md_file = markdown_pest::File::from_string(md_str)?;
+    Ok(md_file)
+}
