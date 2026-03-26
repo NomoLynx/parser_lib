@@ -1,0 +1,42 @@
+prog = _{ SOI ~ rule* ~ EOI }
+
+rule = { rule_name ~ "=" ~ rule_tag? ~ "{" ~ pest_expression ~ "}" }
+rule_name = _{ identifier }
+
+rule_tag = { hidden_tag | atom_tag | bang | atom2_tag }
+hidden_tag = { "_" }
+atom_tag = { "@" }
+atom2_tag = { "$" }
+
+pest_expression = { pest_or? ~ pest_atom ~ (pest_binary_op ~ pest_atom)* }
+pest_binary_op = _{
+    pest_and | pest_or 
+}
+
+pest_atom = {
+    pest_pre_op? ~ (pest_function |
+    string | 
+    identifier |
+    sq_string ~ ".." ~ sq_string |
+    left_bracket ~ pest_expression ~ right_bracket) ~ pest_post_op?
+}
+
+pest_function = { pest_function_name ~ ("(" ~ identifier ~ ")")? }
+pest_function_name = { "PUSH" | "POP" }
+pest_post_op = { star | plus | question_mark | repeat_number }
+pest_pre_op = { bang | case_insensitive_tag }
+repeat_number = _{ "{" ~ (integer ~ ("," ~ integer)?) ~ "}" }
+
+pest_or = { "|" }
+pest_and = { "~" }
+star = { "*" }
+plus = { "+" }
+question_mark = { "?" }
+bang = { "!" }
+case_insensitive_tag = { "^" }
+
+/// A whitespace character.
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+/// A grammar comment.
+COMMENT = _{ ("///" | "//") ~ (!NEWLINE ~ ANY)* }

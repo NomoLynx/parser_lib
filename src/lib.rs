@@ -10,3 +10,4 @@ pub mod mermaid_sequence;
 pub mod markdown_lang;
 pub mod expr_lang;
 pub mod string_format;
+pub mod pest_parser;
