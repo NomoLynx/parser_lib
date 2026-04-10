@@ -9,6 +9,7 @@ pub use node_pair::*;
 
 pub struct CodeGenConfiguration;
 
+/// parse the flowchart from file path
 pub fn parse_flowchart_from_path(path:&str) -> Result<FlowChartProgram, MermaidError> {
     let content = read_file_content(path)
                             .map_err(|_| MermaidError::FileError)?;
