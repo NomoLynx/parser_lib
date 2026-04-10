@@ -977,7 +977,7 @@ impl FlowchartSubgraphs {
 }
 
 ///parse of FlowchartLinkType
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAccessors)]
 pub enum FlowchartLinkType {
     FlowchartOpenlink(FlowchartOpenlink),
     FlowchartDottedlink(FlowchartDottedlink),
@@ -1045,7 +1045,7 @@ impl FlowchartLinkType {
 }
 
 ///parse of the FlowchartRowHeadlink
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAccessors)]
 pub enum FlowchartRowHeadlink {
     FlowchartRowHeadVericalLink(String),
     FlowchartRowHeadHorizontalLink(String),
@@ -1085,7 +1085,7 @@ impl FlowchartRowHeadlink {
 }
 
 ///parse the FlowchartOpenlink
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAccessors)]
 pub enum FlowchartOpenlink {
     FlowchartOpenVericalLink(String),
     FlowchartOpenHorizontalLink(String),
