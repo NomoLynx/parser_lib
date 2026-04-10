@@ -1042,6 +1042,23 @@ impl FlowchartLinkType {
             FlowchartLinkType::FlowchartRowHeadlink(_) => "rowhead_link",
         }
     }
+
+    /// get the label of the link, if the link type does not have label, return empty string
+    pub fn get_label(&self) -> String {
+        match self {
+            FlowchartLinkType::FlowchartOpenlink(link) => match link {
+                FlowchartOpenlink::FlowchartOpenVericalLink(text) => text.clone(),
+                FlowchartOpenlink::FlowchartOpenHorizontalLink(text) => text.clone(),
+            },
+            FlowchartLinkType::FlowchartDottedlink(link) => link.flowchart_dotted_link_text.clone(),
+            FlowchartLinkType::FlowchartThicklink(link) => link.flowchart_thick_link_text.clone(),
+            FlowchartLinkType::FlowchartRowHeadlink(link) => match link {
+                FlowchartRowHeadlink::FlowchartRowHeadVericalLink(text) => text.clone(),
+                FlowchartRowHeadlink::FlowchartRowHeadHorizontalLink(text) => text.clone(),
+            },
+            _ => String::new(), // for invisible_link, cycle_edge, cross_edge, arrow_edge, return empty string as label
+        }
+    }
 }
 
 ///parse of the FlowchartRowHeadlink
