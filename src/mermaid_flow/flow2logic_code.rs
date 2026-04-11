@@ -21,7 +21,7 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> String
     visited_set.insert(node_id);
 
     // define the target function
-    result.push(format!("{}({}) <-- ", get_target_function_name(&graph.node(node_id).name), get_var_name(node_id)));
+    let stmt_start = format!("{}({}) <-- ", get_target_function_name(&graph.node(node_id).name), get_var_name(node_id));
 
     // insert is_function for 1st node
     let rel_name = is_node_name_function_name(&graph.node(node_id).name);
@@ -54,11 +54,13 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> String
         // generate code for each neighbor node, and add them to visited set
         for (from, to) in neighbor_nodes {
             let from_node = graph.node(from);
+            let to_node = graph.node(to);
             let from_node_var_name = get_var_name(from);
             let to_node_var_name = get_var_name(to);
+            let link_function = format!("link_{}_{}", from_node.name, graph.node(to).name);
             
-            let rel_name = is_node_name_function_name(&from_node.name);
-            let code = format!("{rel_name}({from_node_var_name}), link_function({from_node_var_name}, {to_node_var_name})");
+            let rel_name = is_node_name_function_name(&to_node.name);
+            let code = format!("{rel_name}({to_node_var_name}), {link_function}({from_node_var_name}, {to_node_var_name})");
             result.push(code);
             visited_set.insert(to);
             unvisited_set.remove(&to);
@@ -66,7 +68,7 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> String
     }
 
     let statement = result.join(", ");
-    format!("{statement};")
+    format!("{stmt_start} {statement};")
 }
 
 pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, target_node_id: &str) -> Result<Vec<String>, String> {
@@ -79,8 +81,8 @@ pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, targ
 
     // declare all nodes for this graph
     for node in nodes {
-        let node_name = &node.name;
-        let code = format!("{node_name}({item_name});");
+        let node_name = is_node_name_function_name(&node.name);
+        let code = format!("relation {node_name}({item_name});");
         result.push(code);
     }
 
