@@ -1,11 +1,15 @@
 pub mod flowchart_pest;
 pub mod node_pair;
+pub mod flow_graph;
+pub mod flow2logic_code;
 
+pub use flow_graph::*;
 pub use flowchart_pest::*;
 use pest::Parser;
 use crate::common::*;
 pub use crate::mermaid_error::*;
 pub use node_pair::*;
+pub use flow2logic_code::*;
 
 pub struct CodeGenConfiguration;
 
