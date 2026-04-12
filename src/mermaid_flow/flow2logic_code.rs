@@ -13,7 +13,25 @@ fn get_var_name(node_id:NodeId) -> String {
     format!("{var_name}{}", node_id.0)
 }
 
-fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> String {
+/// Generate logic code for the target node and its neighbors, with the target node as the root of the logic code.
+fn get_link_function_name(graph: &Graph<FCNode>, from: NodeId, to: NodeId) -> Option<String> {
+
+    if let Some(edge) = graph.edge_between(from, to) {
+        // edge exists from 'from' to 'to', so 'to' is child of 'from'
+        let fn_name = if edge.data.contains(& "1".to_string()) { "single_child_of" } else { "child_of" };
+        Some(format!("{fn_name}({}, {})", get_var_name(to), get_var_name(from)))
+    }
+    else if let Some(edge) = graph.edge_between(to, from) {
+        // edge exists from 'to' to 'from', so 'from' is child of 'to'
+        let fn_name = if edge.data.contains(& "1".to_string()) { "single_child_of" } else { "child_of" };
+        Some(format!("{fn_name}({}, {})", get_var_name(from), get_var_name(to)))
+    }
+    else {
+        return None;
+    }
+}
+
+fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> Result<String, String> {
     let mut result = vec![];
 
     // visited set to track visited nodes, unvisited set to track unvisited nodes
@@ -53,22 +71,22 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> String
 
         // generate code for each neighbor node, and add them to visited set
         for (from, to) in neighbor_nodes {
-            let from_node = graph.node(from);
             let to_node = graph.node(to);
-            let from_node_var_name = get_var_name(from);
-            let to_node_var_name = get_var_name(to);
-            let link_function = format!("link_{}_{}", from_node.name, graph.node(to).name);
+            let to_node_var_name = get_var_name(to.clone());
+            let link_function = get_link_function_name(graph, from, to)
+                                            .ok_or(format!("Cannot find edge from {} to {}", from.0, to.0))?;
             
             let rel_name = is_node_name_function_name(&to_node.name);
-            let code = format!("{rel_name}({to_node_var_name}), {link_function}({from_node_var_name}, {to_node_var_name})");
+            let code = format!("{rel_name}({to_node_var_name}), {link_function}");
             result.push(code);
             visited_set.insert(to);
             unvisited_set.remove(&to);
         }
     }
 
-    let statement = result.join(", ");
-    format!("{stmt_start} {statement};")
+    let statement = result.join(", \n\t");
+    let r = format!("{stmt_start} {statement};");
+    Ok(r)
 }
 
 pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, target_node_id: &str) -> Result<Vec<String>, String> {
@@ -99,7 +117,7 @@ pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, targ
     result.push(format!("relation {}({item_name});", get_target_function_name(&graph.node(target_node).name)));
 
     // define relationship from target node to all its neighbors
-    let target_code = generate_logic_code_for_node(&graph, target_node);
+    let target_code = generate_logic_code_for_node(&graph, target_node)?;
     result.push(target_code);
 
     Ok(result)

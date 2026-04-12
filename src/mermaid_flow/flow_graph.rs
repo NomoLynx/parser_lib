@@ -48,11 +48,11 @@ impl<N> Graph<N> {
         id
     }
 
-    pub fn add_edge(&mut self, from: NodeId, to: NodeId) {
+    pub fn add_edge(&mut self, from: NodeId, to: NodeId, data: Vec<String>) {
         self.adj
             .get_mut(&from)
             .expect("invalid from node")
-            .push(Edge::new(to));
+            .push(Edge::new2(to, data));
     }
 
     pub fn node(&self, id: NodeId) -> &N {
@@ -382,8 +382,11 @@ impl FlowchartToGraph {
             };
             let to_id = self.intern_node(g, to.get_node_name().to_owned(), to.get_node_text().clone());
 
-            let _label = link.as_ref().map(|l| l.as_str().to_owned());
-            g.add_edge(from_id, to_id);
+            let labels = link
+                .as_ref()
+                .map(|l| vec![l.as_str().to_owned(), l.get_label()])
+                .unwrap_or_default();
+            g.add_edge(from_id, to_id, labels);
         }
     }
 
@@ -439,8 +442,8 @@ mod tests {
         let b = graph.add_node("B");
         let c = graph.add_node("C");
 
-        graph.add_edge(a, b);
-        graph.add_edge(b, c);
+        graph.add_edge(a, b, Vec::new());
+        graph.add_edge(b, c, Vec::new());
 
         let neighbor_ids = graph
             .neighbors(b)
@@ -456,7 +459,7 @@ mod tests {
         let a = graph.add_node("A");
         let b = graph.add_node("B");
 
-        graph.add_edge(a, b);
+        graph.add_edge(a, b, Vec::new());
 
         let neighbor_ids = graph
             .outgoing_neighbors(b)
@@ -473,8 +476,8 @@ mod tests {
         let b = graph.add_node("B");
         let c = graph.add_node("C");
 
-        graph.add_edge(a, b);
-        graph.add_edge(b, c);
+        graph.add_edge(a, b, Vec::new());
+        graph.add_edge(b, c, Vec::new());
 
         let neighbor_edges = graph.neighbor_edges(b);
 
@@ -493,10 +496,10 @@ mod tests {
         let b = graph.add_node("B");
         let c = graph.add_node("C");
 
-        graph.add_edge(a, b);
-        graph.add_edge(a, b);
-        graph.add_edge(b, c);
-        graph.add_edge(c, b);
+        graph.add_edge(a, b, Vec::new());
+        graph.add_edge(a, b, Vec::new());
+        graph.add_edge(b, c, Vec::new());
+        graph.add_edge(c, b, Vec::new());
 
         let neighbors = graph.neighbor_nodes(b).into_iter().collect::<HashSet<_>>();
 
@@ -509,7 +512,7 @@ mod tests {
         let a = graph.add_node("A");
         let b = graph.add_node("B");
 
-        graph.add_edge(a, b);
+        graph.add_edge(a, b, Vec::new());
 
         let edge = graph.edge_between(a, b);
         assert!(edge.is_some());
