@@ -1,7 +1,27 @@
+use rust_macro::ini2hash;
+
 use crate::mermaid_flow::*;
 
-fn is_node_name_function_name(node_name:&str) -> String {
-    format!("is_{node_name}")
+fn get_lib_code(item_name: &str) -> String {
+    let definition = format!("relation single_child_of({item_name}, {item_name});\nrelation child_of({item_name}, {item_name});");
+
+    let code = r#"
+    single_child_of(child, parent) <-- 
+        node(parent), node(child),
+        if parent.is_parent_of(child) && parent.get_children().len() == 1;
+
+    child_of(child, parent) <-- node(parent), node(child), if parent.is_parent_of(child);
+"#;
+
+    format!("{}\n{}", definition, code)
+}
+
+fn is_node_name_function_name(node_name:&str) -> Result<String, String> {
+    let is_function_mapping = ini2hash!("src/mermaid_flow/is_clang_function.ini");
+    let fn_name = is_function_mapping.get(node_name)
+            .ok_or(format!("cannot find function mapping for key = '{node_name}'"))?;
+    let r = format!("{fn_name}");
+    Ok(r)
 }
 
 fn get_target_function_name(node_name:&str) -> String {
@@ -42,7 +62,7 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> Result
     let stmt_start = format!("{}({}) <-- ", get_target_function_name(&graph.node(node_id).name), get_var_name(node_id));
 
     // insert is_function for 1st node
-    let rel_name = is_node_name_function_name(&graph.node(node_id).name);
+    let rel_name = is_node_name_function_name(&graph.node(node_id).name)?;
     result.push(format!("{rel_name}({})", get_var_name(node_id)));
 
     // add all graph node's id to unvisited set
@@ -76,7 +96,7 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> Result
             let link_function = get_link_function_name(graph, from, to)
                                             .ok_or(format!("Cannot find edge from {} to {}", from.0, to.0))?;
             
-            let rel_name = is_node_name_function_name(&to_node.name);
+            let rel_name = is_node_name_function_name(&to_node.name)?;
             let code = format!("{rel_name}({to_node_var_name}), {link_function}");
             result.push(code);
             visited_set.insert(to);
@@ -85,12 +105,17 @@ fn generate_logic_code_for_node(graph: &Graph<FCNode>, node_id:NodeId) -> Result
     }
 
     let statement = result.join(", \n\t");
-    let r = format!("{stmt_start} {statement};");
+    let r = format!("{stmt_start}\n\t{statement};");
     Ok(r)
 }
 
 pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, target_node_id: &str) -> Result<Vec<String>, String> {
     let mut result = vec![format!("relation node({item_name});")];
+
+
+    // add lib code for node relationship
+    let lib_code = get_lib_code(item_name);
+    result.push(lib_code);
 
     let graph = FlowchartToGraph::new()
         .convert(flowchart.get_stmts());
@@ -99,15 +124,15 @@ pub fn get_ascent_logic_code(flowchart: &FlowChartProgram, item_name: &str, targ
 
     // declare all nodes for this graph
     for node in nodes {
-        let node_name = is_node_name_function_name(&node.name);
+        let node_name = is_node_name_function_name(&node.name)?;
         let code = format!("relation {node_name}({item_name});");
         result.push(code);
     }
 
     // define nodes rules for this graph
     for node in nodes {
-        let rel_name = is_node_name_function_name(&node.name);
-        let code = format!("{rel_name}(item) <-- node(item), if item.{rel_name}(item);");
+        let rel_name = is_node_name_function_name(&node.name)?;
+        let code = format!("{rel_name}(item) <-- node(item), if item.{rel_name}();");
         result.push(code);
     }
 
