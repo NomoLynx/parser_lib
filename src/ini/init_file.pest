@@ -12,7 +12,7 @@ property = { name ~ white_space* ~ "=" ~ white_space* ~ value ~ white_space*  ~ 
 name = { char+ }
 value = { char* }
 
-char = _{ ASCII_ALPHANUMERIC | "." | "_" | "/"  | white_space }
+char = _{ ASCII_ALPHANUMERIC | "+" | "-" | "." | "_" | "/"  | white_space }
 white_space = _{ "\t" | " " }
 
 // This allows comments starting with ';' until the end of the line
