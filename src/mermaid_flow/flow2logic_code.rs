@@ -19,7 +19,7 @@ fn get_lib_code(item_name: &str) -> String {
 fn is_node_name_function_name(node_name:&str) -> Result<String, String> {
     let is_function_mapping = ini2hash!("src/mermaid_flow/is_clang_function.ini");
     let fn_name = is_function_mapping.get(node_name)
-            .ok_or(format!("cannot find function mapping for key = '{node_name}'"))?;
+            .ok_or(format!("cannot find function mapping for key = '{node_name}', please update mapping function in is_clang_function.ini"))?;
     let r = format!("{fn_name}");
     Ok(r)
 }
