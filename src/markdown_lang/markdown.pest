@@ -8,7 +8,7 @@ SYMBOLS        = _{ SYMBOL | PUNCTUATION }
 INLINE_SYMBOLS = _{ "`" | "[" | "*" | "![" | "|" | "~" | "=" | "^" }
 
 SYM_NOT_INLINE = _{ !INLINE_SYMBOLS ~ SYMBOLS }
-URL_CHARS      = _{ ASCII_ALPHANUMERIC | "-" | "." | "_" | "~" | ":" | "/" | "?" | "#" | "[" | "]" | "@" | "!" | "$" | "&" | "'" | "(" | (")" ~ &(URL_CHARS* ~ ")")) | "*" | "+" | "," | ";" | "=" | "%" }
+URL_CHARS      = _{ ASCII_ALPHANUMERIC | ":" | "/" | "." | "_" | "-" | "%" | "@" | "#" | "?" | "=" | "&" | "+" | "(" | (")" ~ &(URL_CHARS* ~ ")")) }
 
 // Common
 char_not_sym_nospace = _{ LETTER | NUMBER | "_" }
@@ -83,7 +83,7 @@ subscript = { SUBSCRIPT_DELIMITER ~ subscript_content* ~ SUBSCRIPT_DELIMITER }
 SUPERSCRIPT_DELIMITER = _{ "^" }
 superscript_text = { (char_not_sym | SYM_NOT_INLINE)+ }
 superscript_content = _{ !SUPERSCRIPT_DELIMITER ~ (italic | inline_code | link | reflink | image | bold | strike_through | highlight | subscript | NEWLINE | superscript_text) }
-superscript = { SUBSCRIPT_DELIMITER ~ superscript_content* ~ SUPERSCRIPT_DELIMITER }
+superscript = { SUPERSCRIPT_DELIMITER ~ superscript_content* ~ SUPERSCRIPT_DELIMITER }
 
 // Italic
 ITALIC_DELIMITER = _{ "*" ~ (&BOLD_DELIMITER | !("*")) }
