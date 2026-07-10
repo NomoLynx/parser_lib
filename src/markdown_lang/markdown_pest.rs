@@ -147,6 +147,7 @@ impl File {
                             TextLine::FootNote(p.as_str().to_string(), p1.as_str().to_string())
                         }
                         _ => {
+                            crate::error_rule_pair_vec(&l);
                             error_string(format!("MD parsing missed case: parsing error with rules = {l:?}, search for {:?} to fix", Rule::footnote_content));
                             todo!() 
                         }
