@@ -1,4 +1,4 @@
-use crate::markdown_lang::{markdown_err::MarkdownError, markdown_pest_error::MarkdownPestError};
+use crate::{markdown_lang::{markdown_err::MarkdownError, markdown_pest_error::MarkdownPestError}, mermaid_flow::MermaidError};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct ErrorSourceFileLocation(pub String, pub u32);
@@ -34,6 +34,7 @@ pub enum ParsingError {
     EscapeStringError(EscapeStringError),
     MarkdownPestError(MarkdownPestError),
     MarkdownErr(MarkdownError),
+    PacketErr(MermaidError),
     NoFound(ErrorSourceFileLocation, String),
 }
 

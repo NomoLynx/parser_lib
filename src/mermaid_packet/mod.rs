@@ -7,6 +7,7 @@ use pest::Parser;
 use crate::common::*;
 use crate::mermaid_error::*;
 
+/// Parses a packet file from the given path and returns a PacketSection
 pub fn parse(path_str: &str) -> Result<PacketSection, MermaidError> {
     let str = if !file_exists(path_str) {
         let err_str = format!("packet file at '{}' cannot be found", path_str);
@@ -19,6 +20,7 @@ pub fn parse(path_str: &str) -> Result<PacketSection, MermaidError> {
     parse_str(&str)
 }
 
+/// Parses a packet file from the given string and returns a PacketSection
 pub fn parse_str(input: &str) -> Result<PacketSection, MermaidError> {
     let result = PackatFileParser::parse(Rule::packet_diagram, input);
     

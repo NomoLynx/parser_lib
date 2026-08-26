@@ -33,7 +33,8 @@ impl PacketSection {
         for p in inner {
             match p.as_rule() {
                 Rule::title => {
-                    let title_str = p.as_str().trim();
+                    let p_name = p.into_inner().next().unwrap();
+                    let title_str = p_name.as_str().trim();
                     if name.is_none() {
                         name = Some(title_str.to_string());
                     }
@@ -114,6 +115,12 @@ impl PacketEntry {
     pub fn get_byte_size(&self) -> u8 {
         let bits = self.get_bit_size() as u16;
         ((bits + 7) / 8) as u8
+    }
+}
+
+impl From<&PacketEntry> for (usize, String) {
+    fn from(entry: &PacketEntry) -> Self {
+        (entry.get_byte_size() as usize, entry.get_name().to_string())
     }
 }
 

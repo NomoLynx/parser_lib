@@ -1,6 +1,6 @@
 use pest::error::LineColLocation;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub enum MermaidError {
     InvalidPacketDefinition,
     GeneralError(String),
