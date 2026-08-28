@@ -20,7 +20,8 @@ pub fn parse_flowchart_from_path(path:&str) -> Result<FlowChartProgram, MermaidE
     parse_flowchart(&content)
 }
 
-///parse the flowchart
+///parse the flowchart, the input is the flowchart content, 
+/// return the FlowChartProgram if success, otherwise return the error
 pub fn parse_flowchart(input: &str) -> Result<FlowChartProgram, MermaidError> {
 
     let mut config=CodeGenConfiguration;

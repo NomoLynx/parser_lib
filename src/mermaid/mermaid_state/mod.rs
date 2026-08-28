@@ -8,7 +8,8 @@ use crate::{common::read_file_content, mermaid_flow::MermaidError};
 
 pub struct CodeGenConfiguration;
 
-///parse the git_graph
+///parse the git_graph, input is the git_graph content, 
+/// return the GitGraphProgram if success, otherwise return the error
 pub fn parse_state_graph(input: &str) -> Result<StateGraphProgram, MermaidError> {
 
     let mut config=CodeGenConfiguration;
