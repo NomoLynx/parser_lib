@@ -7,7 +7,7 @@ use rust_macro::*;
 
 #[derive(Parser)]
 #[grammar = "basic_type_grammar.pest"]
-#[grammar = "mermaid_state/state_diagrams.pest"]
+#[grammar = "mermaid/mermaid_state/state_diagrams.pest"]
 pub(crate) struct StateGraphParser;
 
 pub type StateDiagramTitle = String;

@@ -9,7 +9,7 @@ use rust_macro::*;
 
 #[derive(Parser)]
 #[grammar = "basic_type_grammar.pest"]
-#[grammar = "mermaid_sequence/sequence.pest"]
+#[grammar = "mermaid/mermaid_sequence/sequence.pest"]
 pub(crate) struct SequenceParser;
 
 pub type TimeLineTitle = String;

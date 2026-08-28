@@ -9,7 +9,7 @@ use super::{CodeGenConfiguration};
 
 #[derive(Parser)]
 #[grammar = "basic_type_grammar.pest"]
-#[grammar = "mermaid_flow/flowchart.pest"]
+#[grammar = "mermaid/mermaid_flow/flowchart.pest"]
 pub(crate) struct FlowChartParser;
 
 pub type FlowChartTitle = String;

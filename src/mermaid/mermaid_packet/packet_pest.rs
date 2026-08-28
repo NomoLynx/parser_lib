@@ -7,7 +7,7 @@ use rust_macro::*;
 use crate::common::debug::*;
 
 #[derive(Parser)]
-#[grammar = "mermaid_packet/packet.pest"]
+#[grammar = "mermaid/mermaid_packet/packet.pest"]
 pub (crate) struct PackatFileParser;
 
 /// Represents a packet diagram
