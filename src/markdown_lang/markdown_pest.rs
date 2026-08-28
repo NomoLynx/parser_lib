@@ -181,6 +181,7 @@ impl File {
         parse(str)
     }
 
+    /// get all code blocks in the markdown file
     pub fn get_codes(&self) -> Vec<&CodeBlock> {
         self.text_line.iter()
             .filter_map(|x| x.get_code())
@@ -223,7 +224,9 @@ impl File {
 
     pub fn get_items_in_header(&self, header_text:&str, level:u8, f:fn(&TextLine) -> bool) -> Vec<&TextLine> {
         let text_lines = self.get_all_text_lines_after_header(header_text, level);
-        let r = text_lines.into_iter().filter(|x| f(x)).collect::<Vec<_>>();
+        let r = text_lines.into_iter()
+                                    .filter(|x| f(x))
+                                    .collect::<Vec<_>>();
         r
     }
 
