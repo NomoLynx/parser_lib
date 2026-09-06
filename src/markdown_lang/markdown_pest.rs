@@ -241,7 +241,25 @@ impl File {
             }
         });
 
-        r.into_iter().map(|x| x.get_code().unwrap()).collect::<Vec<_>>()
+        r.into_iter()
+            .map(|x| x.get_code().unwrap())
+            .collect::<Vec<_>>()
+    }
+
+    /// get all tables after header with header_text at level 2
+    pub fn get_tables_after_header(&self, header_text:&str) -> Vec<&Table> {
+        let r = self.get_items_in_header(header_text, 2, |x| {
+            if let Some(_c) = x.get_table() {
+                true
+            }
+            else {
+                false
+            }
+        });
+
+        r.into_iter()
+            .map(|x| x.get_table().unwrap())
+            .collect::<Vec<_>>()
     }
 
     pub fn find_code_after_header(&self, head_text:&str) -> Option<&CodeBlock> {
